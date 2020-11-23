@@ -4,6 +4,7 @@ import random
 from os import path
 
 img_dir = path.join(path.dirname(__file__), 'img')
+snd_dir = path.join(path.dirname(__file__), 'snd')
 
 WIDTH = 480
 HEIGHT = 600
@@ -23,6 +24,17 @@ pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Shmup!')
 clock = pygame.time.Clock()
+
+#font_name = pygame.font.match_font('arial')
+
+def draw_text(surf, text, size, x, y):
+    # font = pygame.font.Font(font_name, size)
+    font = pygame.font.Font(path.join(img_dir, 'Gameover.ttf'), size)
+    text_surface = font.render(text, True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -58,6 +70,7 @@ class Player(pygame.sprite.Sprite):
         bullet = Bullet(self.rect.centerx, self.rect.top)
         all_sprites.add(bullet)
         bullets.add(bullet)
+        shoot_sound.play()
 
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
@@ -132,6 +145,16 @@ for img in meteor_list:
 
 bullet_img = pygame.image.load(path.join(img_dir, 'laserRed16.png')).convert_alpha()
 
+# load all sounds
+shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'Laser_Shoot.wav'))
+shoot_sound.set_volume(0.2)
+expl_sounds = []
+for snd in ['Explosion1.wav', 'Explosion2.wav']:
+    tmp_snd = pygame.mixer.Sound(path.join(snd_dir, snd))
+    tmp_snd.set_volume(0.3)
+    expl_sounds.append(tmp_snd)
+pygame.mixer.music.load(path.join(snd_dir, 'music.wav'))
+pygame.mixer.music.set_volume(0.4)
 
 all_sprites = pygame.sprite.Group()
 mobs = pygame.sprite.Group()
@@ -143,6 +166,9 @@ for i in range(8):
     m = Mob()
     all_sprites.add(m)
     mobs.add(m)
+
+score = 0
+pygame.mixer.music.play(loops=-1)
 
 # game loop
 running = True
@@ -163,11 +189,14 @@ while running:
     all_sprites.update()
 
     # check collisions
-    hits = pygame.sprite.groupcollide(bullets, mobs, True, True)
+    hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
+        print(hit)
+        score += 50 - hit.radius
         m = Mob()
         all_sprites.add(m)
         mobs.add(m)
+        random.choice(expl_sounds).play()
 
     hits = pygame.sprite.spritecollide(player, mobs, False, pygame.sprite.collide_circle)
     if hits:
@@ -180,12 +209,7 @@ while running:
     all_sprites.draw(screen)
     """for sprite in all_sprites:
         pygame.draw.rect(screen, WHITE, sprite.rect, 3)"""
+    draw_text(screen, str(score), 36, WIDTH / 2, 10)
     pygame.display.flip()
 
 pygame.quit()
-
-
-
-
-
-
